@@ -65,8 +65,7 @@ async def get_profile(name: str) -> dict:
     return {
         'name': profile_db[1],
         'github': profile_db[2],
-        'is_active': profile_db[3],
-        'port': profile_db[4]
+        'port': profile_db[3]
     }
 
 
@@ -77,17 +76,11 @@ async def create_profile(profile_data: dict):
             f'Profile with name \'{profile_data.get("name")}\' already exists.'
         )
     await check_profile_data(profile_data)
-    is_active = profile_data.get('is_active')
-    if is_active:
-        is_active = 1
-    else:
-        is_active = 0
 
     await execute_queries(
         'create-profile.sql',
         profile_data.get('name'),
         profile_data.get('github'),
-        is_active,
         profile_data.get('port')
     )
 
@@ -128,12 +121,12 @@ async def check_profile_data(profile_data: dict):
         )
 
     # корректность url репозитория
-    if ((github_url is not None)
+    if (
+            github_url is not None
             and not
-            (re.match(r'^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\.git$', github_url))):
-        raise ValueError(
-            "Incorrect Github url."
-        )
+            re.match(r'^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\.git$', github_url)
+    ):
+        raise ValueError("Incorrect Github url.")
     # чекаем доступность репозитория, работаем только с доступными
     if (
             github_url is not None
@@ -161,17 +154,10 @@ async def update_profile(updated_profile: dict):
     if existing_profile == {}:
         raise ValueError(f"Profile with name '{name}' does not exist.")
 
-    is_active = updated_profile.get('is_active')
-    if is_active:
-        is_active = 1
-    else:
-        is_active = 0
-
     await execute_queries(
         'update-profile.sql',
         name,
         updated_profile.get('github'),
-        is_active,
         updated_profile.get('port'),
         name
     )
@@ -187,20 +173,3 @@ async def save_profile(profile_data: dict):
     else:
         await update_profile(profile_data)
 
-
-async def main():
-    # await drop_profiles()
-    # await save_profile(
-    #     {
-    #         'name': 'test',
-    #         'github': 'https://github.com/sno-mephi/SofFYS.git',
-    #         'is_active': 0,
-    #         'port': 8000
-    #     }
-    # )
-    result = await select_all_profiles()
-    print(result)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

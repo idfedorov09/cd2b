@@ -13,11 +13,10 @@ import cd2b_db_core
 async def create_profile(
         name: str,  # имя профиля
         github: str,  # github url
-        is_active: bool = 0,  # действует ли профиль
         port: int = 5613,  # порт сервера
         post_proc: bool = True  # нужно ли выполнять особые действия после создания объекта
 ) -> Optional['Profile']:
-    pre_profile = Profile(name, github, is_active, port)
+    pre_profile = Profile(name, github, port)
     if post_proc:
         await pre_profile._Profile__post_proc()
     return pre_profile
@@ -27,14 +26,12 @@ class Profile:
     def __init__(self,
                  name: str,  # имя профиля
                  github: str,  # github url
-                 is_active: bool = 0,  # действует ли профиль
                  port: int = 5613,  # порт сервера
                  ):
         # TODO: сделать name изменяемым
         self._name = name
 
         self.github = github
-        self.is_active = is_active
         self.port = port
 
         # DEPRECATED
@@ -182,7 +179,6 @@ docker run \
         return {
             'name': self._name,
             'github': self.github,
-            'is_active': self.is_active,
             'port': self.port
         }
 
@@ -191,7 +187,6 @@ docker run \
         return await create_profile(
             name=param.get('name'),
             github=param.get('github'),
-            is_active=param.get('is_active'),
             port=param.get('port'),
             post_proc=post_proc
         )
@@ -222,7 +217,7 @@ docker run \
         await cd2b_db_core.remove_profile(self._name)
 
     def __str__(self):
-        return f"Profile(name={self._name}, github={self.github}, is_active={self.is_active}, port={self.port})"
+        return f"Profile(name={self._name}, github={self.github}, port={self.port})"
 
     def __repr__(self):
         return self.__str__()
@@ -238,8 +233,7 @@ async def get_all_profiles():
                 {
                     'name': dict_profile[1],
                     'github': dict_profile[2],
-                    'is_active': dict_profile[3],
-                    'port': dict_profile[4]
+                    'port': dict_profile[3]
                 }
             )
         )
