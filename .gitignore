@@ -1,0 +1,11 @@
+/test.py
+/logs
+/__pycache__
+
+# Python enviroments
+/cd2b-env/
+/cd2b-pyenv/
+/env/
+
+# ide
+.idea/
