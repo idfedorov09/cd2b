@@ -9,3 +9,7 @@
 
 # ide
 .idea/
+
+# Project-generated files
+cd2b_profiles.db
+/PROPERTIES

@@ -255,13 +255,3 @@ def create_dirs(path: str):
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-
-async def test():
-    profile = await Profile.get_by_name('test')
-    # print(profile)
-    # await profile.rerun(rebuild=True, external_port=2281)
-    # await profile.remove_image()
-    print(await profile.is_running())
-
-
-asyncio.run(test())
