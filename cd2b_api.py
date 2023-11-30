@@ -14,9 +14,16 @@ async def create_profile(
         name: str,  # имя профиля
         github: str,  # github url
         port: int = 5613,  # порт сервера
-        post_proc: bool = True  # нужно ли выполнять особые действия после создания объекта
+        post_proc: Optional['bool'] = None  # нужно ли выполнять особые действия после создания объекта
 ) -> Optional['Profile']:
     pre_profile = Profile(name, github, port)
+
+    # если профиль уже существует то не делаем post_proc
+    if post_proc is None and await Profile.get_by_name(name, False) is not None:
+        post_proc = False
+    elif post_proc is None:
+        post_proc = True
+
     if post_proc:
         await pre_profile._Profile__post_proc()
     return pre_profile
