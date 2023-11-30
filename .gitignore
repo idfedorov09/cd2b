@@ -1,8 +1,7 @@
 /test.py
-/logs
 /__pycache__
 
-# Python enviroments
+### Python enviroments
 /cd2b-env/
 /cd2b-pyenv/
 /env/
@@ -10,7 +9,13 @@
 # ide
 .idea/
 
-# Project-generated files
+
+
+### Project-generated files
 cd2b_profiles.db
 /PROPERTIES
 /repos
+/logs
+
+#
+/test_env

@@ -1,4 +1,3 @@
-import asyncio
 import os
 import shutil
 import subprocess
@@ -8,26 +7,7 @@ import git
 import requests
 
 import cd2b_db_core
-
-
-async def create_profile(
-        name: str,  # имя профиля
-        github: str,  # github url
-        port: int = 5613,  # порт сервера
-        post_proc: Optional['bool'] = None  # нужно ли выполнять особые действия после создания объекта
-) -> Optional['Profile']:
-    pre_profile = Profile(name, github, port)
-
-    # если профиль уже существует то не делаем post_proc
-    if post_proc is None and await Profile.get_by_name(name, False) is not None:
-        post_proc = False
-    elif post_proc is None:
-        post_proc = True
-
-    if post_proc:
-        await pre_profile._Profile__post_proc()
-    return pre_profile
-
+import utils
 
 class Profile:
     def __init__(self,
@@ -45,7 +25,39 @@ class Profile:
         self.docker_image_name = f'cd2b_{self.repo_name}_{self._name}'
 
         # создаем папку с пропертями если ее не существует
-        create_dirs(f'./PROPERTIES/{self.docker_image_name}/')
+        utils.create_dirs(self.__property_folder())
+
+    # папка содержащая проперти приложения
+    def __property_folder(self) -> str:
+        return utils.build_path(
+            cd2b_db_core.WORKDIR,
+            f'PROPERTIES/{self.docker_image_name}/'
+        )
+
+    # путь к проперти
+    def __property_file_path(self) -> str:
+        return utils.build_path(
+            cd2b_db_core.WORKDIR,
+            f'PROPERTIES/{self.docker_image_name}/application.properties'
+        )
+
+    def __repo_path_lvl1(self) -> str:
+        return utils.build_path(
+            cd2b_db_core.WORKDIR,
+            f'repos/{self.docker_image_name}'
+        )
+
+    def __repo_path_lvl2(self) -> str:
+        return utils.build_path(
+            cd2b_db_core.WORKDIR,
+            f'repos/{self.docker_image_name}/{self.repo_name}'
+        )
+
+    def __logs_dir(self) -> str:
+        return utils.build_path(
+            cd2b_db_core.WORKDIR,
+            f'logs/{self.docker_image_name}/'
+        )
 
     async def __post_proc(self):
         await self.__can_create()
@@ -60,7 +72,7 @@ class Profile:
 
     # создаем папку с гитхаб-репо и клонируем его
     async def __clone_git_(self):
-        repo_path = f'./repos/{self.docker_image_name}/{self.repo_name}'
+        repo_path = self.__repo_path_lvl2()
 
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
@@ -74,7 +86,7 @@ class Profile:
         await self.__apply_properties()
         build_command = (f'docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) '
                          f'-t {self.docker_image_name} .')
-        subprocess.run(build_command, shell=True, check=True, cwd=f'./repos/{self.docker_image_name}/{self.repo_name}')
+        subprocess.run(build_command, shell=True, check=True, cwd=self.__repo_path_lvl2())
 
     # удаляет образ контейнера профиля
     async def remove_image(self):
@@ -98,7 +110,7 @@ class Profile:
 docker run \
 -p {_external_port}:{self.port} \
 --rm \
--v $(pwd)/logs/{self.docker_image_name}/:/usr/src/app/logs \
+-v {self.__logs_dir()}:/usr/src/app/logs \
 --name {self.docker_image_name} \
 -d \
 {self.docker_image_name} \
@@ -115,7 +127,7 @@ docker run \
         response = requests.get(properties_file_url)
         if response.status_code != 200:
             raise ConnectionError(f"Can't load property file by url {properties_file_url}")
-        property_path = f'./PROPERTIES/{self.docker_image_name}/application.property'
+        property_path = self.__property_file_path()
         with open(property_path, 'wb') as file:
             file.write(response.content)
 
@@ -125,9 +137,9 @@ docker run \
             'server.port',
             self.port
         )
-        source_property = f'./PROPERTIES/{self.docker_image_name}/application.properties'
-        destination_property = f'./repos/{self.docker_image_name}/{self.repo_name}/src/main/resources/application.properties'
-        create_dirs(f'./repos/{self.docker_image_name}/{self.repo_name}/src/main/resources/')
+        source_property = self.__property_file_path()
+        utils.create_dirs(f'{self.__repo_path_lvl2()}/src/main/resources/')
+        destination_property = f'{self.__repo_path_lvl2()}/src/main/resources/application.properties'
         shutil.copy2(source_property, destination_property)
 
     # устанавливает порт
@@ -143,7 +155,7 @@ docker run \
 
     # меняет properties
     async def __update_property(self, property_name: str, new_value):
-        properties_path = f'./PROPERTIES/{self.docker_image_name}/application.properties'
+        properties_path = self.__property_file_path()
         encoding = 'utf-8'
         with open(properties_path, 'r', encoding=encoding) as file:
             lines = file.readlines()
@@ -168,15 +180,6 @@ docker run \
     @property
     async def name(self) -> str:
         return self._name
-
-    @staticmethod
-    async def get_by_name(name: str, post_proc: bool = False) -> Optional['Profile']:
-        profile_dict = await cd2b_db_core.get_profile(name)
-        if profile_dict == {}:
-            return None
-
-        # по дефолту post_proc=False так как уже точно известно что профиль валидный и есть папка с репо
-        return await Profile.from_dict(profile_dict, post_proc=post_proc)
 
     async def to_dict(self) -> dict:
         return {
@@ -221,11 +224,11 @@ docker run \
         await self.remove_image()
 
         # удаляем репозиторий
-        repo_path = f'./repos/{self.docker_image_name}/'
+        repo_path = self.__repo_path_lvl1()
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
         # удаляем проперти
-        properties_path = f'./PROPERTIES/{self.docker_image_name}/'
+        properties_path = self.__property_folder()
         if os.path.exists(properties_path):
             shutil.rmtree(properties_path)
 
@@ -254,12 +257,38 @@ async def get_all_profiles() -> list[Profile]:
     return result
 
 
+async def create_profile(
+        name: str,  # имя профиля
+        github: str,  # github url
+        port: int = 5613,  # порт сервера
+        post_proc: Optional['bool'] = None  # нужно ли выполнять особые действия после создания объекта
+) -> Optional['Profile']:
+    pre_profile = Profile(name, github, port)
+
+    # если профиль уже существует то не делаем post_proc
+    if post_proc is None and await get_by_name(name, False) is not None:
+        post_proc = False
+    elif post_proc is None:
+        post_proc = True
+
+    if post_proc:
+        await pre_profile._Profile__post_proc()
+    return pre_profile
+
+
+async def get_by_name(name: str, post_proc: bool = False) -> Optional['Profile']:
+    profile_dict = await cd2b_db_core.get_profile(name)
+    if profile_dict == {}:
+        return None
+
+    # по дефолту post_proc=False так как уже точнnew_workdir_pathо известно что профиль валидный и есть папка с репо
+    return await Profile.from_dict(profile_dict, post_proc=post_proc)
+
+
 async def remove_profile_by_name(name: str):
     await cd2b_db_core.remove_profile(name)
 
 
-def create_dirs(path: str):
-    directory_path = os.path.dirname(path)
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+async def set_workdir(new_workdir_path: str):
+    await cd2b_db_core.set_workdir(new_workdir_path)
 

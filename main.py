@@ -19,7 +19,7 @@ class ProfileRequest(BaseModel):
 @app.post("/create_profile")
 async def create_profile(profile_request: ProfileRequest):
     response = {'message': "Profile created successfully."}
-    if await cd2b_api.Profile.get_by_name(profile_request.name) is not None:
+    if await cd2b_api.get_by_name(profile_request.name) is not None:
         response['message'] = (f'I am not creating a new profile, '
                                f'there is already a profile with name=\'{profile_request.name}\'')
     profile = await cd2b_api.create_profile(
@@ -30,6 +30,11 @@ async def create_profile(profile_request: ProfileRequest):
     )
     response['profile_object'] = str(profile)
     return response
+
+
+@app.post("/set_env_path")
+async def set_env_path(env_path: str):
+    await cd2b_api.set_workdir(env_path)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,28 @@
-import asyncio
+import os
 import re
 
 import aiosqlite
 import requests
 
+import utils
+
 QUERIES_PATH = './query'
-DATABASE_PATH = 'cd2b_profiles.db'
+DATABASE_FILE = 'cd2b_profiles.db'
+
+# папка в которой хранятся PROPERTIES, repos и бдшка
+WORKDIR = '.'
+
+
+# БД хранится в WORKDIR/DATABASE_FILE
+async def db_path():
+    return os.path.join(WORKDIR, DATABASE_FILE)
+
+
+# Переключает рабочую директорию
+async def set_workdir(new_workdir_path: str):
+    utils.create_dirs(new_workdir_path)
+    global WORKDIR
+    WORKDIR = new_workdir_path
 
 
 # Выполняет запросы из .sql файлов. filename - название файла, без указания пути
@@ -16,7 +33,7 @@ async def execute_queries_with_no_prequery(filename: str, *params) -> list:
         queries = file.read().split(';')[:-1]
 
     results = []
-    async with aiosqlite.connect(DATABASE_PATH) as db:
+    async with aiosqlite.connect(await db_path()) as db:
         for query in queries:
             query = query.strip()
             if 'select' in query.lower():
@@ -38,7 +55,7 @@ async def execute_queries(filename: str, *params):
 
 # Дропает бдшку
 async def drop_profiles():
-    async with aiosqlite.connect(DATABASE_PATH) as db:
+    async with aiosqlite.connect(await db_path()) as db:
         await db.execute(f'DROP TABLE profiles')
 
 
@@ -49,7 +66,7 @@ async def remove_profile(name: str):
 # Возвращает все профили
 async def select_all_profiles():
     await execute_queries_with_no_prequery('pre-query.sql')
-    async with aiosqlite.connect(DATABASE_PATH) as db:
+    async with aiosqlite.connect(await db_path()) as db:
         cursor = await db.execute(f'SELECT * FROM profiles')
         rows = await cursor.fetchall()
         await cursor.close()
