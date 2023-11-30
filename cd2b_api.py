@@ -56,7 +56,7 @@ class Profile:
 
     # создаем папку с гитхаб-репо и клонируем его
     async def __clone_git_(self):
-        repo_path = f'./{self.docker_image_name}/{self.repo_name}'
+        repo_path = f'./repos/{self.docker_image_name}/{self.repo_name}'
 
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
@@ -70,7 +70,7 @@ class Profile:
         await self.__apply_properties()
         build_command = (f'docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) '
                          f'-t {self.docker_image_name} .')
-        subprocess.run(build_command, shell=True, check=True, cwd=f'./{self.docker_image_name}/{self.repo_name}')
+        subprocess.run(build_command, shell=True, check=True, cwd=f'./repos/{self.docker_image_name}/{self.repo_name}')
 
     # удаляет образ контейнера профиля
     async def remove_image(self):
@@ -123,8 +123,8 @@ docker run \
             self.port
         )
         source_property = f'./PROPERTIES/{self.docker_image_name}/application.properties'
-        destination_property = f'./{self.docker_image_name}/{self.repo_name}/src/main/resources/application.properties'
-        create_dirs(f'./{self.docker_image_name}/{self.repo_name}/src/main/resources/')
+        destination_property = f'./repos/{self.docker_image_name}/{self.repo_name}/src/main/resources/application.properties'
+        create_dirs(f'./repos/{self.docker_image_name}/{self.repo_name}/src/main/resources/')
         shutil.copy2(source_property, destination_property)
 
     # устанавливает порт
@@ -215,6 +215,16 @@ docker run \
     # удаляет профиль
     async def remove(self):
         await cd2b_db_core.remove_profile(self._name)
+        await self.remove_image()
+
+        # удаляем репозиторий
+        repo_path = f'./repos/{self.docker_image_name}/'
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
+        # удаляем проперти
+        properties_path = f'./PROPERTIES/{self.docker_image_name}/'
+        if os.path.exists(properties_path):
+            shutil.rmtree(properties_path)
 
     def __str__(self):
         return f"Profile(name={self._name}, github={self.github}, port={self.port})"
