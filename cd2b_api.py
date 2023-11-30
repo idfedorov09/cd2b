@@ -236,11 +236,12 @@ docker run \
         return self.__str__()
 
 
-async def get_all_profiles():
+async def get_all_profiles() -> list[Profile]:
     all_profiles_dicts = await cd2b_db_core.select_all_profiles()
-    result = []
+    result: list[Profile] = []
     for dict_profile in all_profiles_dicts:
-        print(f'handle profile {dict_profile}')
+        # TODO: do logging
+        print(f'getting profile {dict_profile}')
         result.append(
             await Profile.from_dict(
                 {
@@ -250,7 +251,7 @@ async def get_all_profiles():
                 }
             )
         )
-    print(result)
+    return result
 
 
 async def remove_profile_by_name(name: str):
