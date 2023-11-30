@@ -34,9 +34,6 @@ class Profile:
         self.github = github
         self.port = port
 
-        # DEPRECATED
-        self.has_properties = False
-
         self.repo_name = self.github.split('/')[-1].replace('.git', '')
         self.docker_image_name = f'cd2b_{self.repo_name}_{self._name}'
 
@@ -114,7 +111,6 @@ docker run \
         property_path = f'./PROPERTIES/{self.docker_image_name}/application.property'
         with open(property_path, 'wb') as file:
             file.write(response.content)
-        self.has_properties = True
 
     # выгружает профиль проперти в папку с репо
     async def __apply_properties(self):
