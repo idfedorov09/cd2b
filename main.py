@@ -37,5 +37,18 @@ async def set_env_path(env_path: str):
     await cd2b_api.set_workdir(env_path)
 
 
+@app.post("/clear_env")
+async def clear_env():
+    profiles = await cd2b_api.get_all_profiles()
+    for profile in profiles:
+        await profile.remove()
+
+
+@app.post("/upload_prop")
+async def upload_prop(profile_name: str, file_url: str):
+    profile = await cd2b_api.get_by_name(profile_name)
+    await profile.load_properties(file_url)
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
