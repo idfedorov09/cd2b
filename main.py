@@ -1,11 +1,10 @@
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException
 import uvicorn
 from pydantic import BaseModel
 
 import cd2b_api
-import cd2b_db_core
 
 app = FastAPI()
 
@@ -71,8 +70,9 @@ async def upload_prop(profile_name: str, file_url: str):
 
 
 # Build and Run profile. If profile is running - exception
+# по сокету передает логи. если не нужны - есть аналогичный post-метод
 @app.websocket("/bandr")
-async def bandr(profile_name: str, websocket: WebSocket):
+async def bandr_ws(profile_name: str, websocket: WebSocket):
     await websocket.accept()
     profile = await cd2b_api.get_by_name(profile_name)
 
@@ -81,13 +81,29 @@ async def bandr(profile_name: str, websocket: WebSocket):
         await websocket.close(1001, error_msg)
         return
 
-    if profile.is_running():
-        error_msg = f'The profile {profile.name} is already running.'
+    if await profile.is_running():
+        error_msg = f'The profile {profile_name} is already running.'
         await websocket.close(1001, error_msg)
         return
 
     await profile.run(websocket=websocket)
     await websocket.close(1000, 'ok')
+
+
+# Аналог вебсокета bandr, без вывода инфы о запуске. Ответ возвращается после запуска образа
+@app.post("/bandr")
+async def bandr_post(profile_name: str):
+    profile = await cd2b_api.get_by_name(profile_name)
+    if profile is None:
+        error_msg = f'The profile {profile_name} does not exist.'
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    if await profile.is_running():
+        error_msg = f'The profile {profile_name} is already running.'
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    await profile.run()
+    return await profile_response(profile)
 
 
 # Устанавливает профилю с именем profile_name порт port
@@ -97,6 +113,34 @@ async def set_port(profile_name: str, port: int | str):
     profile = await cd2b_api.get_by_name(profile_name)
     await profile.set_port(new_port)
     return await profile_response(profile)
+
+
+@app.post("/stop")
+async def stop_profile(profile_name: str):
+    profile = await cd2b_api.get_by_name(profile_name)
+    if profile is None:
+        error_msg = f'The profile {profile_name} does not exist.'
+        raise HTTPException(status_code=400, detail=error_msg)
+    await profile.stop_container()
+    return await profile_response(profile)
+
+
+@app.post("/remove")
+async def stop_profile(profile_name: str):
+    profile = await cd2b_api.get_by_name(profile_name)
+    if profile is None:
+        error_msg = f'The profile {profile_name} does not exist.'
+        raise HTTPException(status_code=400, detail=error_msg)
+    await profile.remove()
+
+
+@app.post("/all_profiles")
+async def all_profiles():
+    profiles = await cd2b_api.get_all_profiles()
+    response = []
+    for profile in profiles:
+        response.append(await profile_response(profile))
+    return profiles
 
 
 if __name__ == "__main__":

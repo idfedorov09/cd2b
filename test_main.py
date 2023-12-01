@@ -1,4 +1,3 @@
-import json
 import os
 
 from fastapi.testclient import TestClient
@@ -36,6 +35,7 @@ def test_set_env():
 
 
 def test_clear_env():
+    set2test()
     response = clear_test_env()
     assert response.status_code == 200
 
@@ -56,6 +56,7 @@ def test_create_profile():
 
 
 def test_check_profile():
+    set2test()
     response = client.post(
         "/check_profile",
         params={"profile_name": "test_profile"}
@@ -73,6 +74,7 @@ def test_check_profile():
 
 
 def test_upload_properties():
+    set2test()
     properties_url = "https://vk.com/doc492608290_674750778?hash=NZAYYAoCqHIAAzszC5AEnbmZKtoPRZFlhWNHfKMJZZL&dl" \
                      "=Kt0ftKXgFnOjlttHiEbYxZSzTmHHaPP0t4a219pdmDw"
     excepted_path = "./test_env/PROPERTIES/cd2b_snomephi_bot_test_profile/application.properties"
@@ -89,6 +91,7 @@ def test_upload_properties():
 
 
 def test_set_port():
+    set2test()
     params = {
         "profile_name": "test_profile",
         "port": 7779
@@ -100,3 +103,48 @@ def test_set_port():
 
     assert response.status_code == 200
     assert response.json()['port'] == 7779
+
+
+def test_all_profiles():
+    set2test()
+    response = client.post(
+        "/all_profiles"
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_bandr_post():
+    set2test()
+    response = client.post(
+        "/bandr",
+        params={"profile_name": "test_profile"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()['is_running'] == True
+
+
+def test_stop_profile():
+    set2test()
+    response = client.post(
+        "/stop",
+        params={"profile_name": "test_profile"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()['is_running'] == False
+
+
+def test_remove():
+    set2test()
+    response = client.post(
+        "/remove",
+        params={"profile_name": "test_profile"}
+    )
+
+    all_profiles_response = client.post("/all_profiles")
+
+    assert response.status_code == 200
+    assert len(all_profiles_response.json()) == 0
