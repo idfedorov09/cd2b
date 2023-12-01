@@ -5,9 +5,11 @@ from typing import Optional
 
 import git
 import requests
+from fastapi import WebSocket
 
 import cd2b_db_core
 import utils
+
 
 class Profile:
     def __init__(self,
@@ -80,13 +82,22 @@ class Profile:
         git.Repo.clone_from(self.github, repo_path)
 
     # build docker container with name self.docker_image_name
-    async def build(self):
+    async def build(self, websocket: Optional['WebSocket'] = None):
         await self.remove_image()
         await self.__clone_git_()
         await self.__apply_properties()
         build_command = (f'docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) '
                          f'-t {self.docker_image_name} .')
-        subprocess.run(build_command, shell=True, check=True, cwd=self.__repo_path_lvl2())
+        process = subprocess.Popen(
+            build_command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=self.__repo_path_lvl2(),
+            text=True
+        )
+
+        await utils.process_writer(process, websocket)
 
     # удаляет образ контейнера профиля
     async def remove_image(self):
@@ -96,7 +107,8 @@ class Profile:
 
     # запускает профиль с заданной проброской портов, то есть external_port - внешний порт приложения,
     # по которому оно будет доступно
-    async def run(self, external_port: int = -1, rebuild: bool = True):
+    # по вебсокету отправляются логи из build
+    async def run(self, external_port: int = -1, rebuild: bool = True, websocket: Optional['WebSocket'] = None):
         _external_port = external_port
         if external_port == -1:
             _external_port = self.port
@@ -104,7 +116,7 @@ class Profile:
         await cd2b_db_core.is_valid_port(_external_port)
 
         if rebuild:
-            await self.build()
+            await self.build(websocket)
 
         run_command = f"""\
 docker run \
@@ -214,9 +226,9 @@ docker run \
         subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Перезапускает контейнер, если он запущен; запускает, если выключен
-    async def rerun(self, external_port: int = -1, rebuild: bool = True):
+    async def rerun(self, external_port: int = -1, rebuild: bool = True, websocket: Optional['WebSocket'] = None):
         await self.stop_container()
-        await self.run(external_port=external_port, rebuild=rebuild)
+        await self.run(external_port=external_port, rebuild=rebuild, websocket=websocket)
 
     # удаляет профиль
     async def remove(self):
