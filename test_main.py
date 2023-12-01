@@ -1,3 +1,4 @@
+import json
 import os
 
 from fastapi.testclient import TestClient
@@ -54,9 +55,26 @@ def test_create_profile():
     assert response.status_code == 200
 
 
+def test_check_profile():
+    response = client.post(
+        "/check_profile",
+        params={"profile_name": "test_profile"}
+    )
+
+    profile_info = response.json()
+
+    assert response.status_code == 200
+    assert profile_info['name'] == 'test_profile'
+    assert profile_info['repo_name'] == 'snomephi_bot'
+    assert profile_info['repo_uri'] == 'https://github.com/sno-mephi/snomephi_bot.git'
+    assert profile_info['port'] == 9913
+    assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
+    assert profile_info['is_running'] == False
+
+
 def test_upload_properties():
-    properties_url = "https://vk.com/doc492608290_674750778?hash=NZAYYAoCqHIAAzszC5AEnbmZKtoPRZFlhWNHfKMJZZL&dl"\
-                      "=Kt0ftKXgFnOjlttHiEbYxZSzTmHHaPP0t4a219pdmDw"
+    properties_url = "https://vk.com/doc492608290_674750778?hash=NZAYYAoCqHIAAzszC5AEnbmZKtoPRZFlhWNHfKMJZZL&dl" \
+                     "=Kt0ftKXgFnOjlttHiEbYxZSzTmHHaPP0t4a219pdmDw"
     excepted_path = "./test_env/PROPERTIES/cd2b_snomephi_bot_test_profile/application.properties"
     params = {
         "profile_name": "test_profile",
@@ -68,3 +86,17 @@ def test_upload_properties():
     )
     assert response.status_code == 200
     assert os.path.exists(excepted_path)
+
+
+def test_set_port():
+    params = {
+        "profile_name": "test_profile",
+        "port": 7779
+    }
+    response = client.post(
+        "/set_port",
+        params=params
+    )
+
+    assert response.status_code == 200
+    assert response.json()['port'] == 7779
