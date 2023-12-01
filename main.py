@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 import uvicorn
 from pydantic import BaseModel
 
@@ -48,6 +48,15 @@ async def clear_env():
 async def upload_prop(profile_name: str, file_url: str):
     profile = await cd2b_api.get_by_name(profile_name)
     await profile.load_properties(file_url)
+
+
+# Build and Run profile. If profile is running - exception
+@app.websocket("/bandr")
+async def bandr(profile_name: str, websocket: WebSocket):
+    await websocket.accept()
+    profile = await cd2b_api.get_by_name(profile_name)
+    await profile.rerun(websocket=websocket)
+    await websocket.close()
 
 
 if __name__ == "__main__":
