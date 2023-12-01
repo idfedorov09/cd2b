@@ -72,7 +72,7 @@ async def upload_prop(profile_name: str, file_url: str):
 # Build and Run profile. If profile is running - exception
 # по сокету передает логи. если не нужны - есть аналогичный post-метод
 @app.websocket("/bandr")
-async def bandr_ws(profile_name: str, websocket: WebSocket):
+async def bandr_ws(profile_name: str, websocket: WebSocket, external_port: int = -1, rebuild: bool = True):
     await websocket.accept()
     profile = await cd2b_api.get_by_name(profile_name)
 
@@ -86,13 +86,17 @@ async def bandr_ws(profile_name: str, websocket: WebSocket):
         await websocket.close(1001, error_msg)
         return
 
-    await profile.run(websocket=websocket)
+    await profile.run(
+        websocket=websocket,
+        external_port=external_port,
+        rebuild=rebuild
+    )
     await websocket.close(1000, 'ok')
 
 
-# Аналог вебсокета bandr, без вывода инфы о запуске. Ответ возвращается после запуска образа
+# Аналог вебсокета bandr, без вывода инфы о билде. Ответ возвращается после запуска образа
 @app.post("/bandr")
-async def bandr_post(profile_name: str):
+async def bandr_post(profile_name: str, external_port: int = -1, rebuild: bool = True):
     profile = await cd2b_api.get_by_name(profile_name)
     if profile is None:
         error_msg = f'The profile {profile_name} does not exist.'
@@ -102,7 +106,10 @@ async def bandr_post(profile_name: str):
         error_msg = f'The profile {profile_name} is already running.'
         raise HTTPException(status_code=400, detail=error_msg)
 
-    await profile.run()
+    await profile.run(
+        external_port=external_port,
+        rebuild=rebuild
+    )
     return await profile_response(profile)
 
 
@@ -141,6 +148,50 @@ async def all_profiles():
     for profile in profiles:
         response.append(await profile_response(profile))
     return profiles
+
+
+# Build and Run profile. If profile is running - stop one and run again
+# по сокету передает логи. если не нужны - есть аналогичный post-метод
+@app.websocket("/rerun")
+async def rerun_ws(profile_name: str, websocket: WebSocket, external_port: int = -1, rebuild: bool = True):
+    await websocket.accept()
+    profile = await cd2b_api.get_by_name(profile_name)
+
+    if profile is None:
+        error_msg = f'The profile {profile_name} does not exist.'
+        await websocket.close(1001, error_msg)
+        return
+
+    if await profile.is_running():
+        error_msg = f'The profile {profile_name} is already running.'
+        await websocket.close(1001, error_msg)
+        return
+
+    await profile.rerun(
+        websocket=websocket,
+        external_port=external_port,
+        rebuild=rebuild
+    )
+    await websocket.close(1000, 'ok')
+
+
+# Аналог вебсокета rerun, без вывода инфы о билде. Ответ возвращается после запуска образа
+@app.post("/rerun")
+async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool = True):
+    profile = await cd2b_api.get_by_name(profile_name)
+    if profile is None:
+        error_msg = f'The profile {profile_name} does not exist.'
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    if await profile.is_running():
+        error_msg = f'The profile {profile_name} is already running.'
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    await profile.rerun(
+        external_port=external_port,
+        rebuild=rebuild
+    )
+    return await profile_response(profile)
 
 
 if __name__ == "__main__":
