@@ -147,7 +147,7 @@ async def all_profiles():
     response = []
     for profile in profiles:
         response.append(await profile_response(profile))
-    return profiles
+    return response
 
 
 # Build and Run profile. If profile is running - stop one and run again
@@ -195,4 +195,4 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
