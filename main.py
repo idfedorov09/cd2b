@@ -147,7 +147,7 @@ async def all_profiles():
     response = []
     for profile in profiles:
         response.append(await profile_response(profile))
-    return profiles
+    return response
 
 
 # Build and Run profile. If profile is running - stop one and run again
