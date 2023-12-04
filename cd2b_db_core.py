@@ -13,6 +13,15 @@ DATABASE_FILE = 'cd2b_profiles.db'
 WORKDIR = '.'
 
 
+class InvalidPortError(Exception):
+    """Исключение для случаев, когда порт недействителен."""
+
+    def __init__(self, port):
+        self.port = port
+        self.msg = f"Incorrect port {port}. Port is an Integer by segment [1; 65535]"
+        super().__init__(self.msg)
+
+
 # БД хранится в WORKDIR/DATABASE_FILE
 async def db_path():
     return os.path.join(WORKDIR, DATABASE_FILE)
@@ -156,9 +165,7 @@ async def check_profile_data(profile_data: dict):
 
     # проверяем корректность порта
     if port is not None and not await is_valid_port(port):
-        raise ValueError(
-            f"Incorrect port. Port is an Integer by segment [1; 65535]"
-        )
+        raise InvalidPortError(port)
 
 
 # Обновляет профиль с именем updated_profile['name']

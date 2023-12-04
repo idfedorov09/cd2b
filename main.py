@@ -5,6 +5,7 @@ import uvicorn
 from pydantic import BaseModel
 
 import cd2b_api
+from cd2b_db_core import InvalidPortError
 
 app = FastAPI()
 
@@ -116,9 +117,11 @@ async def bandr_post(profile_name: str, external_port: int = -1, rebuild: bool =
 # Устанавливает профилю с именем profile_name порт port
 @app.post("/set_port")
 async def set_port(profile_name: str, port: int | str):
-    new_port = int(port)
     profile = await cd2b_api.get_by_name(profile_name)
-    await profile.set_port(new_port)
+    try:
+        await profile.set_port(port)
+    except InvalidPortError as e:
+        raise HTTPException(status_code=400, detail=e.msg)
     return await profile_response(profile)
 
 
