@@ -155,13 +155,13 @@ docker run \
         shutil.copy2(source_property, destination_property)
 
     # устанавливает порт
-    async def set_port(self, new_port: int):
+    async def set_port(self, new_port: int | str):
         # не делаем лишние походы в бд
         if self.port == new_port:
             return
         if not await cd2b_db_core.is_valid_port(new_port):
-            raise ValueError(f'Port {new_port} is incorrect.')
-        self.port = new_port
+            raise cd2b_db_core.InvalidPortError(new_port)
+        self.port = int(new_port)
         await self.save()
         await self.__apply_properties()
 
