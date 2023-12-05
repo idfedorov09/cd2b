@@ -81,6 +81,9 @@ class Profile:
 
         git.Repo.clone_from(self.github, repo_path)
 
+    async def has_properties(self):
+        return os.path.exists(self.__property_file_path())
+
     # build docker container with name self.docker_image_name
     async def build(self, websocket: Optional['WebSocket'] = None):
         await self.remove_image()
@@ -262,8 +265,9 @@ async def get_all_profiles() -> list[Profile]:
                 {
                     'name': dict_profile[1],
                     'github': dict_profile[2],
-                    'port': dict_profile[3]
-                }
+                    'port': dict_profile[3],
+                },
+                post_proc=False
             )
         )
     return result
