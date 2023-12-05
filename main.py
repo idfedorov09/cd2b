@@ -1,13 +1,17 @@
+import os
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi import FastAPI, WebSocket, HTTPException, Request
 import uvicorn
 from pydantic import BaseModel
+from starlette.responses import FileResponse, HTMLResponse
+from starlette.templating import Jinja2Templates
 
 import cd2b_api
 from cd2b_db_core import InvalidPortError
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 
 class ProfileRequest(BaseModel):
@@ -197,6 +201,26 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
         rebuild=rebuild
     )
     return await profile_response(profile)
+
+
+@app.get("/logs/{files_path:path}")
+def list_files(request: Request, files_path: str):
+    full_path = os.path.join("./logs", files_path)
+
+    if os.path.isdir(full_path):
+        files = os.listdir(full_path)
+        files_paths = sorted([os.path.join(f"{request.url._url}", f) for f in files])
+        return templates.TemplateResponse(
+            "index.html", {"request": request, "files": files_paths}
+        )
+    elif os.path.isfile(full_path):
+        return FileResponse(full_path)
+    else:
+        return HTMLResponse(
+            content=f'404, not found: {request.url._url}',
+            status_code=404
+        )
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
