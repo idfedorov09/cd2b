@@ -17,6 +17,7 @@ class ProfileRequest(BaseModel):
     post_proc: Optional['bool'] = None
 
 
+# Контракт на профиль
 async def profile_response(profile: cd2b_api.Profile):
     return {
         "name": await profile.name,
@@ -24,6 +25,7 @@ async def profile_response(profile: cd2b_api.Profile):
         "repo_uri": profile.github,
         "port": profile.port,
         "image_name": profile.docker_image_name,
+        "has_properties": await profile.has_properties(),
         "is_running": await profile.is_running()
     }
 
@@ -195,7 +197,6 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
         rebuild=rebuild
     )
     return await profile_response(profile)
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
