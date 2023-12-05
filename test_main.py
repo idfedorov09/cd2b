@@ -52,7 +52,16 @@ def test_create_profile():
         "/create_profile",
         json=json_data
     )
+
+    profile_info = response.json()['profile']
     assert response.status_code == 200
+    assert profile_info['name'] == 'test_profile'
+    assert profile_info['repo_name'] == 'snomephi_bot'
+    assert profile_info['repo_uri'] == 'https://github.com/sno-mephi/snomephi_bot.git'
+    assert profile_info['port'] == 9913
+    assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
+    assert profile_info['has_properties'] == False
+    assert profile_info['is_running'] == False
 
 
 def test_check_profile():
@@ -70,6 +79,7 @@ def test_check_profile():
     assert profile_info['repo_uri'] == 'https://github.com/sno-mephi/snomephi_bot.git'
     assert profile_info['port'] == 9913
     assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
+    assert profile_info['has_properties'] == False
     assert profile_info['is_running'] == False
 
 
@@ -88,6 +98,15 @@ def test_upload_properties():
     )
     assert response.status_code == 200
     assert os.path.exists(excepted_path)
+
+    profile_info = response.json()
+    assert profile_info['name'] == 'test_profile'
+    assert profile_info['repo_name'] == 'snomephi_bot'
+    assert profile_info['repo_uri'] == 'https://github.com/sno-mephi/snomephi_bot.git'
+    assert profile_info['port'] == 9913
+    assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
+    assert profile_info['has_properties'] == True
+    assert profile_info['is_running'] == False
 
 
 def test_set_port():
@@ -113,6 +132,16 @@ def test_all_profiles():
 
     assert response.status_code == 200
     assert len(response.json()) == 1
+
+    profile_info = response.json()[0]
+
+    assert profile_info['name'] == 'test_profile'
+    assert profile_info['repo_name'] == 'snomephi_bot'
+    assert profile_info['repo_uri'] == 'https://github.com/sno-mephi/snomephi_bot.git'
+    assert profile_info['port'] == 7779
+    assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
+    assert profile_info['has_properties'] == True
+    assert profile_info['is_running'] == False
 
 
 def test_bandr_post():
