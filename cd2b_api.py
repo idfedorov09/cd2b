@@ -66,6 +66,7 @@ class Profile:
         # сохраняем профиль в бдшке
         await self.save()
         await self.__clone_git_()
+        utils.create_dirs(self.__logs_dir())
 
     # метод проверяющий профиль на валидность
     async def __can_create(self):
