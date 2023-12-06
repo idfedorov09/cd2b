@@ -22,6 +22,14 @@ class InvalidPortError(Exception):
         super().__init__(self.msg)
 
 
+class InvalidPropertiesFormat(Exception):
+    """Исключение для случаев, когда application.properties имеет неверный формат"""
+
+    def __init__(self):
+        self.msg = "Incorrect properties file format."
+        super().__init__(self.msg)
+
+
 # БД хранится в WORKDIR/DATABASE_FILE
 async def db_path():
     return os.path.join(WORKDIR, DATABASE_FILE)
