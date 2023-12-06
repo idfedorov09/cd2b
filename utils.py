@@ -52,9 +52,10 @@ async def process_writer(process: subprocess, websocket: Optional['WebSocket'] =
             is_gradle_downloading = False
 
 
-async def is_valid_properties_file(file_content: str) -> bool:
+async def is_valid_properties_file(properties_content: str) -> bool:
+    file_content = properties_content.split('\n')
     for line in file_content:
-        if line.strip().startswith('#'):
+        if line.strip().startswith('#') or line.strip() == '':
             continue
         parts = line.split('=')
         if len(parts) != 2:
