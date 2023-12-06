@@ -207,7 +207,7 @@ def list_files(request: Request, files_path: str):
     if not is_inside_logs(full_path):
         return HTMLResponse(
             content=f'403, access denied: {request.url._url}',
-            status_code=404
+            status_code=403
         )
 
     if os.path.isdir(full_path):
