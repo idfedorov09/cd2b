@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from typing import Optional
 
@@ -31,7 +32,7 @@ async def process_writer(process: subprocess, websocket: Optional['WebSocket'] =
             is_gradle_downloading = True
             output = ""
 
-        output = output+process.stderr.read(1) if is_gradle_downloading \
+        output = output + process.stderr.read(1) if is_gradle_downloading \
             else process.stderr.readline().strip().rstrip('\n')
 
         if output == '' and process.poll() is not None:
@@ -49,3 +50,16 @@ async def process_writer(process: subprocess, websocket: Optional['WebSocket'] =
 
         if is_gradle_downloading and "100%" in output:
             is_gradle_downloading = False
+
+
+async def is_valid_properties_file(file_content: str) -> bool:
+    for line in file_content:
+        if line.strip().startswith('#'):
+            continue
+        parts = line.split('=')
+        if len(parts) != 2:
+            return False
+        key, value = parts
+        if not re.match(r'^[a-zA-Z0-9._-]+$', key.strip()):
+            return False
+    return True

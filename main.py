@@ -8,7 +8,7 @@ from starlette.responses import FileResponse, HTMLResponse
 from starlette.templating import Jinja2Templates
 
 import cd2b_api
-from cd2b_db_core import InvalidPortError
+from cd2b_db_core import InvalidPortError, InvalidPropertiesFormat
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -30,6 +30,7 @@ async def profile_response(profile: cd2b_api.Profile):
         "port": profile.port,
         "image_name": profile.docker_image_name,
         "has_properties": await profile.has_properties(),
+        "properties_content": await profile.properties_content(),
         "is_running": await profile.is_running()
     }
 
@@ -72,7 +73,10 @@ async def clear_env():
 @app.post("/upload_prop")
 async def upload_prop(profile_name: str, file_url: str):
     profile = await cd2b_api.get_by_name(profile_name)
-    await profile.load_properties(file_url)
+    try:
+        await profile.load_properties(file_url)
+    except InvalidPropertiesFormat as e:
+        HTTPException(status_code=400, detail=e.msg)
     return await profile_response(profile)
 
 
