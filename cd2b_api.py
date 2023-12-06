@@ -138,12 +138,12 @@ docker run \
         print(run_command)
         subprocess.run(run_command, shell=True, check=True)
 
-    async def properties_content(self):
-        if not self.has_properties():
+    async def properties_content(self) -> Optional['str']:
+        if not await self.has_properties():
             return None
         file_path = self.__property_file_path()
         with open(file_path, 'r') as file:
-            content = file.readlines()
+            content = file.read()
         return content
 
     # устанавливает профилю файл пропертей
@@ -152,7 +152,7 @@ docker run \
         if response.status_code != 200:
             raise ConnectionError(f"Can't load property file by url {properties_file_url}")
 
-        is_valid_format = utils.is_valid_properties_file(response.text)
+        is_valid_format = await utils.is_valid_properties_file(response.text)
         if not is_valid_format:
             raise cd2b_db_core.InvalidPropertiesFormat()
 
