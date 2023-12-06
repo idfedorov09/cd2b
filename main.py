@@ -161,6 +161,7 @@ async def all_profiles():
 
 # Build and Run profile. If profile is running - stop one and run again
 # по сокету передает логи. если не нужны - есть аналогичный post-метод
+# rebuild - сделать клон перед тем как запустить
 @app.websocket("/rerun")
 async def rerun_ws(profile_name: str, websocket: WebSocket, external_port: int = -1, rebuild: bool = True):
     await websocket.accept()
@@ -168,11 +169,6 @@ async def rerun_ws(profile_name: str, websocket: WebSocket, external_port: int =
 
     if profile is None:
         error_msg = f'The profile {profile_name} does not exist.'
-        await websocket.close(1001, error_msg)
-        return
-
-    if await profile.is_running():
-        error_msg = f'The profile {profile_name} is already running.'
         await websocket.close(1001, error_msg)
         return
 
@@ -192,10 +188,6 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
         error_msg = f'The profile {profile_name} does not exist.'
         raise HTTPException(status_code=400, detail=error_msg)
 
-    if await profile.is_running():
-        error_msg = f'The profile {profile_name} is already running.'
-        raise HTTPException(status_code=400, detail=error_msg)
-
     await profile.rerun(
         external_port=external_port,
         rebuild=rebuild
@@ -203,9 +195,20 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
     return await profile_response(profile)
 
 
+def is_inside_logs(path):
+    logs_path = os.path.abspath('./logs')
+    absolute_path = os.path.abspath(path)
+    return absolute_path.startswith(logs_path)
+
+
 @app.get("/logs/{files_path:path}")
 def list_files(request: Request, files_path: str):
     full_path = os.path.join("./logs", files_path)
+    if not is_inside_logs(full_path):
+        return HTMLResponse(
+            content=f'403, access denied: {request.url._url}',
+            status_code=404
+        )
 
     if os.path.isdir(full_path):
         files = os.listdir(full_path)
