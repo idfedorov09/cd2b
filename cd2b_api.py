@@ -184,6 +184,9 @@ docker run \
 
     # меняет properties
     async def update_property(self, property_name: str, new_value):
+        if not re.match(r'^[a-zA-Z0-9._-]+$', property_name.strip()):
+            raise ValueError('Incorrect key format.')
+
         properties_path = self.__property_file_path()
         encoding = 'utf-8'
         with open(properties_path, 'r', encoding=encoding) as file:
