@@ -164,7 +164,8 @@ docker run \
     async def __apply_properties(self):
         await self.update_property(
             'server.port',
-            self.port
+            self.port,
+            is_port=True
         )
         source_property = self.__property_file_path()
         utils.create_dirs(f'{self.__repo_path_lvl2()}/src/main/resources/')
@@ -173,9 +174,6 @@ docker run \
 
     # устанавливает порт
     async def set_port(self, new_port: int | str):
-        # не делаем лишние походы в бд
-        if self.port == new_port:
-            return
         if not await cd2b_db_core.is_valid_port(new_port):
             raise cd2b_db_core.InvalidPortError(new_port)
         self.port = int(new_port)
@@ -183,7 +181,7 @@ docker run \
         await self.__apply_properties()
 
     # меняет properties
-    async def update_property(self, property_name: str, new_value):
+    async def update_property(self, property_name: str, new_value, is_port: bool = False):
         if not re.match(r'^[a-zA-Z0-9._-]+$', property_name.strip()):
             raise ValueError('Incorrect key format.')
 
@@ -204,6 +202,10 @@ docker run \
 
         with open(properties_path, 'w', encoding=encoding) as file:
             file.writelines(lines)
+
+        # запрещаем вручную менять порт
+        if not is_port:
+            await self.set_port(self.port)
 
     # сохраняет профиль в бдшке
     async def save(self):
