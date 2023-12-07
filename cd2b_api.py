@@ -182,6 +182,9 @@ docker run \
 
     # меняет properties
     async def update_property(self, property_name: str, new_value, is_port: bool = False):
+        property_name = property_name.strip()
+        new_value = str(new_value).strip()
+
         if not re.match(r'^[a-zA-Z0-9._-]+$', property_name.strip()):
             raise ValueError('Incorrect key format.')
 
