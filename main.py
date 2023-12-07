@@ -199,16 +199,16 @@ async def rerun_post(profile_name: str, external_port: int = -1, rebuild: bool =
     return await profile_response(profile)
 
 
-def is_inside_logs(path):
+async def is_inside_logs(path):
     logs_path = os.path.abspath('./logs')
     absolute_path = os.path.abspath(path)
     return absolute_path.startswith(logs_path)
 
 
 @app.get("/logs/{files_path:path}")
-def list_files(request: Request, files_path: str):
+async def list_files(request: Request, files_path: str):
     full_path = os.path.join("./logs", files_path)
-    if not is_inside_logs(full_path):
+    if not await is_inside_logs(full_path):
         return HTMLResponse(
             content=f'403, access denied: {request.url._url}',
             status_code=403
@@ -227,6 +227,15 @@ def list_files(request: Request, files_path: str):
             content=f'404, not found: {request.url._url}',
             status_code=404
         )
+
+
+# ручка меняющая поле пропертей
+# если такого поля нет - добавляется новое
+@app.post("/change_properties_field")
+async def change_properties_field(profile_name: str, key: str, value: str):
+    profile = await cd2b_api.get_by_name(profile_name)
+    await profile.update_property(key, value)
+    return await profile_response(profile)
 
 
 if __name__ == "__main__":

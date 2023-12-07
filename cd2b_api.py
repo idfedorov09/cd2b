@@ -162,7 +162,7 @@ docker run \
 
     # выгружает профиль проперти в папку с репо
     async def __apply_properties(self):
-        await self.__update_property(
+        await self.update_property(
             'server.port',
             self.port
         )
@@ -183,7 +183,7 @@ docker run \
         await self.__apply_properties()
 
     # меняет properties
-    async def __update_property(self, property_name: str, new_value):
+    async def update_property(self, property_name: str, new_value):
         properties_path = self.__property_file_path()
         encoding = 'utf-8'
         with open(properties_path, 'r', encoding=encoding) as file:
