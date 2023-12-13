@@ -17,7 +17,9 @@ class Profile:
                  name: str,  # имя профиля
                  github: str,  # github url
                  port: int = 5613,  # порт сервера
+                 workdir: str = ".",  # директория в которой должна храниться БДшка с данным профилем, '.' для ROOT
                  ):
+        self.workdir = workdir
         # TODO: сделать name изменяемым
         self._name = name
 
@@ -33,32 +35,32 @@ class Profile:
     # папка содержащая проперти приложения
     def __property_folder(self) -> str:
         return utils.build_path(
-            cd2b_db_core.WORKDIR,
+            self.workdir,
             f'PROPERTIES/{self.docker_image_name}/'
         )
 
     # путь к проперти
     def __property_file_path(self) -> str:
         return utils.build_path(
-            cd2b_db_core.WORKDIR,
+            self.workdir,
             f'PROPERTIES/{self.docker_image_name}/application.properties'
         )
 
     def __repo_path_lvl1(self) -> str:
         return utils.build_path(
-            cd2b_db_core.WORKDIR,
+            self.workdir,
             f'repos/{self.docker_image_name}'
         )
 
     def __repo_path_lvl2(self) -> str:
         return utils.build_path(
-            cd2b_db_core.WORKDIR,
+            self.workdir,
             f'repos/{self.docker_image_name}/{self.repo_name}'
         )
 
     def __logs_dir(self) -> str:
         return utils.build_path(
-            cd2b_db_core.WORKDIR,
+            self.workdir,
             f'logs/{self.docker_image_name}/'
         )
 
@@ -212,7 +214,7 @@ docker run \
 
     # сохраняет профиль в бдшке
     async def save(self):
-        await cd2b_db_core.save_profile(await self.to_dict())
+        await cd2b_db_core.save_profile(await self.to_dict(), self.workdir)
 
     @property
     async def name(self) -> str:
@@ -226,12 +228,13 @@ docker run \
         }
 
     @staticmethod
-    async def from_dict(param: dict, post_proc: bool = True):
+    async def from_dict(param: dict, workdir: str, post_proc: bool = True):
         return await create_profile(
             name=param.get('name'),
             github=param.get('github'),
             port=param.get('port'),
-            post_proc=post_proc
+            post_proc=post_proc,
+            workdir=workdir
         )
 
     # проверяет, запущен ли контейнер данного профиля
@@ -257,7 +260,7 @@ docker run \
 
     # удаляет профиль
     async def remove(self):
-        await cd2b_db_core.remove_profile(self._name)
+        await cd2b_db_core.remove_profile(self.workdir, self._name)
         await self.remove_image()
 
         # удаляем репозиторий
@@ -276,8 +279,8 @@ docker run \
         return self.__str__()
 
 
-async def get_all_profiles() -> list[Profile]:
-    all_profiles_dicts = await cd2b_db_core.select_all_profiles()
+async def get_all_profiles(workdir: str) -> list[Profile]:
+    all_profiles_dicts = await cd2b_db_core.select_all_profiles(workdir)
     result: list[Profile] = []
     for dict_profile in all_profiles_dicts:
         # TODO: do logging
@@ -289,7 +292,8 @@ async def get_all_profiles() -> list[Profile]:
                     'github': dict_profile[2],
                     'port': dict_profile[3],
                 },
-                post_proc=False
+                post_proc=False,
+                workdir=workdir
             )
         )
     return result
@@ -299,12 +303,16 @@ async def create_profile(
         name: str,  # имя профиля
         github: str,  # github url
         port: int = 5613,  # порт сервера
+        workdir: str = ".",  # for ROOT
         post_proc: Optional['bool'] = None  # нужно ли выполнять особые действия после создания объекта
 ) -> Optional['Profile']:
-    pre_profile = Profile(name, github, port)
+    pre_profile = Profile(name=name,
+                          github=github,
+                          port=port,
+                          workdir=workdir)
 
     # если профиль уже существует то не делаем post_proc
-    if post_proc is None and await get_by_name(name, False) is not None:
+    if post_proc is None and await get_by_name(workdir, name, False) is not None:
         post_proc = False
     elif post_proc is None:
         post_proc = True
@@ -314,19 +322,14 @@ async def create_profile(
     return pre_profile
 
 
-async def get_by_name(name: str, post_proc: bool = False) -> Optional['Profile']:
-    profile_dict = await cd2b_db_core.get_profile(name)
+async def get_by_name(workdir: str, name: str, post_proc: bool = False) -> Optional['Profile']:
+    profile_dict = await cd2b_db_core.get_profile(workdir=workdir, name=name)
     if profile_dict == {}:
         return None
 
-    # по дефолту post_proc=False так как уже точнnew_workdir_pathо известно что профиль валидный и есть папка с репо
-    return await Profile.from_dict(profile_dict, post_proc=post_proc)
+    # по дефолту post_proc=False так как уже точно известно что профиль валидный и есть папка с репо
+    return await Profile.from_dict(param=profile_dict, post_proc=post_proc, workdir=workdir)
 
 
-async def remove_profile_by_name(name: str):
-    await cd2b_db_core.remove_profile(name)
-
-
-async def set_workdir(new_workdir_path: str):
-    await cd2b_db_core.set_workdir(new_workdir_path)
-
+async def remove_profile_by_name(workdir: str, name: str):
+    await cd2b_db_core.remove_profile(workdir, name)

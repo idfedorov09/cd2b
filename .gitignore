@@ -19,3 +19,5 @@ cd2b_profiles.db
 
 #
 /test_env
+/USERS/
+/.pytest_cache/
