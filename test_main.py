@@ -2,50 +2,43 @@ import os
 
 from fastapi.testclient import TestClient
 
+import main
 from main import app
 
 client = TestClient(app)
 
 
-# устанавливает тестовое окружение для тестирования
-def set2test():
-    response = client.post(
-        "/set_env_path",
-        params={"env_path": "./test_env/"}
+# создает тестового пользователя
+def test_create_user():
+    main.create_root_user(
+        default_username="TEST_USER",
+        default_password="12345"
     )
-    return response
 
 
-def clear_test_env():
+def test_clear_profiles():
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
-        "/clear_env",
+        "/clear_profiles",
+        json=json_data
     )
-    return response
-
-
-# Полностью подготоваливает тестовое окружение, очищая его
-def prepare_test_env():
-    set2test()
-    clear_test_env()
-
-
-def test_set_env():
-    response = set2test()
-    assert response.status_code == 200
-
-
-def test_clear_env():
-    set2test()
-    response = clear_test_env()
     assert response.status_code == 200
 
 
 def test_create_profile():
-    prepare_test_env()
     json_data = {
-        "name": "test_profile",
-        "github": 'https://github.com/sno-mephi/snomephi_bot.git',
-        "port": 9913
+        "user_request": {
+            "login": "TEST_USER",
+            "password": "12345"
+        },
+        "profile_request": {
+            "name": "test_profile",
+            "github": "https://github.com/sno-mephi/snomephi_bot.git",
+            "port": 9913
+        }
     }
 
     response = client.post(
@@ -65,10 +58,14 @@ def test_create_profile():
 
 
 def test_check_profile():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
         "/check_profile",
-        params={"profile_name": "test_profile"}
+        params={"profile_name": "test_profile"},
+        json=json_data
     )
 
     profile_info = response.json()
@@ -84,17 +81,21 @@ def test_check_profile():
 
 
 def test_upload_properties():
-    set2test()
-    properties_url = "https://vk.com/doc492608290_674750778?hash=NZAYYAoCqHIAAzszC5AEnbmZKtoPRZFlhWNHfKMJZZL&dl" \
-                     "=Kt0ftKXgFnOjlttHiEbYxZSzTmHHaPP0t4a219pdmDw"
-    excepted_path = "./test_env/PROPERTIES/cd2b_snomephi_bot_test_profile/application.properties"
+    properties_url = "https://vk.com/doc492608290_675255602?hash=Fdmi72Pc0IZcmtVrLKAx057jLqzMnpEZsHX4QSZ5IRD&dl" + \
+                      "=PFivrJQ2A3UOBcNrN6UlmrNDwwIskd71DlBiizrD1Cc"
+    excepted_path = "./USERS/TEST_USER/PROPERTIES/cd2b_snomephi_bot_test_profile/application.properties"
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     params = {
         "profile_name": "test_profile",
         "file_url": properties_url
     }
     response = client.post(
         "/upload_prop",
-        params=params
+        params=params,
+        json=json_data
     )
     assert response.status_code == 200
     assert os.path.exists(excepted_path)
@@ -110,14 +111,18 @@ def test_upload_properties():
 
 
 def test_set_port():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     params = {
         "profile_name": "test_profile",
         "port": 7779
     }
     response = client.post(
         "/set_port",
-        params=params
+        params=params,
+        json=json_data
     )
 
     assert response.status_code == 200
@@ -125,9 +130,13 @@ def test_set_port():
 
 
 def test_all_profiles():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
-        "/all_profiles"
+        "/all_profiles",
+        json=json_data
     )
 
     assert response.status_code == 200
@@ -144,11 +153,16 @@ def test_all_profiles():
     assert profile_info['is_running'] == False
 
 
+# TODO: тест для аналогичной ws-ручки
 def test_bandr_post():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
         "/bandr",
-        params={"profile_name": "test_profile"}
+        params={"profile_name": "test_profile"},
+        json=json_data
     )
 
     assert response.status_code == 200
@@ -156,10 +170,14 @@ def test_bandr_post():
 
 
 def test_stop_profile():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
         "/stop",
-        params={"profile_name": "test_profile"}
+        params={"profile_name": "test_profile"},
+        json=json_data
     )
 
     assert response.status_code == 200
@@ -167,13 +185,20 @@ def test_stop_profile():
 
 
 def test_remove():
-    set2test()
+    json_data = {
+        "login": "TEST_USER",
+        "password": "12345"
+    }
     response = client.post(
         "/remove",
-        params={"profile_name": "test_profile"}
+        params={"profile_name": "test_profile"},
+        json=json_data
     )
 
-    all_profiles_response = client.post("/all_profiles")
+    all_profiles_response = client.post(
+        "/all_profiles",
+        json=json_data
+    )
 
     assert response.status_code == 200
     assert len(all_profiles_response.json()) == 0
