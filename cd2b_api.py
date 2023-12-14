@@ -17,7 +17,7 @@ class Profile:
                  name: str,  # имя профиля
                  github: str,  # github url
                  port: int = 5613,  # порт сервера
-                 workdir: str = ".",  # директория в которой должна храниться БДшка с данным профилем, '.' для ROOT
+                 workdir: str = ".",  # рабочая директория
                  ):
         self.workdir = workdir
         # TODO: сделать name изменяемым
@@ -312,7 +312,8 @@ async def create_profile(
                           workdir=workdir)
 
     # если профиль уже существует то не делаем post_proc
-    if post_proc is None and await get_by_name(workdir, name, False) is not None:
+    exist_profile = await get_by_name(workdir=workdir, name=name, post_proc=False)
+    if post_proc is None and exist_profile is not None:
         post_proc = False
     elif post_proc is None:
         post_proc = True
