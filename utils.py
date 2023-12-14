@@ -1,5 +1,4 @@
 import os
-import random
 import re
 import subprocess
 from typing import Optional
@@ -66,14 +65,3 @@ async def is_valid_properties_file(properties_content: str) -> bool:
             return False
     return True
 
-
-def gen_password() -> str:
-    prefix_len = 5
-    suffix_len = 12
-    result = ""
-    for i in range(prefix_len):
-        result += chr(random.randint(ord('0'), ord('9')))
-    result += ':'
-    for i in range(suffix_len):
-        result += chr(random.randint(ord('a'), ord('z')))
-    return result
