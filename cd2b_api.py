@@ -312,8 +312,7 @@ async def create_profile(
                           workdir=workdir)
 
     # если профиль уже существует то не делаем post_proc
-    exist_profile = await get_by_name(workdir=workdir, name=name, post_proc=False)
-    if post_proc is None and exist_profile is not None:
+    if post_proc is None and await get_by_name(workdir, name, False) is not None:
         post_proc = False
     elif post_proc is None:
         post_proc = True

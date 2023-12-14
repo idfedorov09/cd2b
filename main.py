@@ -98,9 +98,9 @@ async def check_profile(
 async def clear_profiles(
         user: User = Depends(auth_validation)
 ):
-    # profiles = await cd2b_api.get_all_profiles(workdir=user.workdir)
-    # for profile in profiles:
-    #     await profile.remove()
+    profiles = await cd2b_api.get_all_profiles(workdir=user.workdir)
+    for profile in profiles:
+        await profile.remove()
     pass
 
 
