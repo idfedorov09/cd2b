@@ -58,8 +58,8 @@ async def execute_queries_with_no_prequery(filename: str, workdir: str, *params)
 
 # Выполняет запрос из файла с пре-запросом
 async def execute_queries(filename: str, workdir: str, *params):
-    await execute_queries_with_no_prequery('pre-query.sql', workdir)
-    return await execute_queries_with_no_prequery(filename, workdir, *params)
+    await execute_queries_with_no_prequery(filename='pre-query.sql', workdir=workdir)
+    return await execute_queries_with_no_prequery(filename=filename, workdir=workdir, *params)
 
 
 # Дропает бдшку
@@ -193,8 +193,8 @@ async def update_profile(updated_profile: dict, workdir: str):
 # если сущестувет - обновляет существующую
 async def save_profile(profile_data: dict, workdir: str):
     name = profile_data.get('name')
-    db_profile = await get_profile(workdir, name)
+    db_profile = await get_profile(workdir=workdir, name=name)
     if db_profile == {}:
-        await create_profile(profile_data, workdir)
+        await create_profile(profile_data=profile_data, workdir=workdir)
     else:
-        await update_profile(profile_data, workdir)
+        await update_profile(updated_profile=profile_data, workdir=workdir)
