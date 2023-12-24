@@ -62,7 +62,8 @@ async def profile_response(profile: cd2b_api.Profile):
         "image_name": profile.docker_image_name,
         "has_properties": await profile.has_properties(),
         "properties_content": await profile.properties_content(),
-        "is_running": await profile.is_running()
+        "is_running": await profile.is_running(),
+        "last_commit": await profile.last_commit()
     }
 
 
