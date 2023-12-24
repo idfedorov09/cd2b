@@ -246,6 +246,12 @@ docker run \
             return output.decode('utf-8') is not None
         return False
 
+    # Возвращает хэш последнего коммита
+    async def last_commit(self):
+        command = ["git", "rev-parse", "HEAD"]
+        result = subprocess.run(command, stdout=subprocess.PIPE, text=True, cwd=self.__repo_path_lvl2())
+        return result.stdout.strip()
+
     # останавливает контейнер профиля
     async def stop_container(self):
         if not await self.is_running():
