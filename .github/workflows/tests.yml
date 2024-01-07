@@ -26,6 +26,10 @@ jobs:
         sudo apt-get remove -y containerd.io
         sudo apt-get install -y docker.io
 
+    - name: Run local postgres
+      run: |
+        docker run -d  --rm  -e POSTGRES_DB=test_database   -e POSTGRES_USER=user   -e POSTGRES_PASSWORD=12345   -p 5433:5432   postgres:latest
+
     - name: Run tests
       run: |
-        pytest -o log_cli=true
+        pytest --log-cli-level=DEBUG --capture=tee-sys

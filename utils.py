@@ -24,19 +24,16 @@ def build_path(path1: str, path2: str) -> str:
 # Вспомогательный метод, отправляющий по вебсокету результат билда контейнера
 # TODO: обработка ошибок
 # TODO: возможно стоит читать посимвольно и проверять на новую строку? Тогда эта штука будет работать не только в случае с gradle
-async def process_writer(process: subprocess, websocket: Optional['WebSocket'] = None):
+async def process_writer(process, websocket: Optional['WebSocket'] = None):
     output = ''
     is_gradle_downloading = False
-    while True:
+    while process.returncode is None:
         if "Downloading https://services.gradle.org/" in output:
             is_gradle_downloading = True
             output = ""
 
-        output = output + process.stderr.read(1) if is_gradle_downloading \
-            else process.stderr.readline().strip().rstrip('\n')
-
-        if output == '' and process.poll() is not None:
-            break
+        output = output + (await process.stderr.read(1)).decode() if is_gradle_downloading \
+            else (await process.stderr.readline()).decode().strip().rstrip('\n')
 
         if output:
             if websocket is not None:
@@ -50,6 +47,9 @@ async def process_writer(process: subprocess, websocket: Optional['WebSocket'] =
 
         if is_gradle_downloading and "100%" in output:
             is_gradle_downloading = False
+
+        if process.stdout.at_eof() and process.stderr.at_eof():
+            break
 
 
 async def is_valid_properties_file(properties_content: str) -> bool:

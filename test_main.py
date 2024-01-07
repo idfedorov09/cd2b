@@ -81,8 +81,8 @@ def test_check_profile():
 
 
 def test_upload_properties():
-    properties_url = "https://vk.com/doc492608290_675255602?hash=Fdmi72Pc0IZcmtVrLKAx057jLqzMnpEZsHX4QSZ5IRD&dl" + \
-                      "=PFivrJQ2A3UOBcNrN6UlmrNDwwIskd71DlBiizrD1Cc"
+    properties_url = "https://vk.com/doc492608290_675255602?hash=NAUTa62XuCduzjCZJdKp42dVWzSJj7RatGAW4GMNY2g&dl="\
+                     "8XdejTc3wOgOvTTOQcblvyfkpZpCzol2mZtY0zomdd4"
     excepted_path = "./USERS/TEST_USER/PROPERTIES/cd2b_snomephi_bot_test_profile/application.properties"
     json_data = {
         "login": "TEST_USER",
@@ -151,6 +151,7 @@ def test_all_profiles():
     assert profile_info['image_name'] == 'cd2b_snomephi_bot_test_profile'
     assert profile_info['has_properties'] == True
     assert profile_info['is_running'] == False
+    assert "last_commit" in profile_info
 
 
 # TODO: тест для аналогичной ws-ручки

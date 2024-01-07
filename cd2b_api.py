@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import shutil
@@ -93,15 +94,17 @@ class Profile:
         await self.remove_image()
         await self.__clone_git_()
         await self.__apply_properties()
-        build_command = (f'docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) '
+        build_command = (f'docker build --build-arg HOST_USER_UID=$(id -u) --build-arg HOST_USER_GID=$(id -g) '
                          f'-t {self.docker_image_name} .')
-        process = subprocess.Popen(
-            build_command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=self.__repo_path_lvl2(),
-            text=True
+
+        full_command = f'cd {self.__repo_path_lvl2()}; {build_command}'
+        print(full_command)
+
+        process = await asyncio.create_subprocess_shell(
+            full_command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            shell=True
         )
 
         await utils.process_writer(process, websocket)
@@ -110,7 +113,12 @@ class Profile:
     async def remove_image(self):
         await self.stop_container()
         command = f"docker rmi {self.docker_image_name}"
-        subprocess.run(command, shell=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await process.communicate()
 
     # запускает профиль с заданной проброской портов, то есть external_port - внешний порт приложения,
     # по которому оно будет доступно
@@ -138,7 +146,8 @@ docker run \
         # TODO: do logging
         print('run command:')
         print(run_command)
-        subprocess.run(run_command, shell=True, check=True)
+        process = await asyncio.create_subprocess_shell(run_command)
+        await process.communicate()
 
     async def properties_content(self) -> Optional['str']:
         if not await self.has_properties():
@@ -238,6 +247,7 @@ docker run \
         )
 
     # проверяет, запущен ли контейнер данного профиля
+    # TODO: асинхронность
     async def is_running(self):
         command = f"docker ps | grep '{self.docker_image_name}'"
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -257,7 +267,12 @@ docker run \
         if not await self.is_running():
             return
         command = f"docker stop {self.docker_image_name}"
-        subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await process.communicate()
 
     # Перезапускает контейнер, если он запущен; запускает, если выключен
     async def rerun(self, external_port: int = -1, rebuild: bool = True, websocket: Optional['WebSocket'] = None):
