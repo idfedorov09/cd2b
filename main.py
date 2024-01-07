@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import Optional, Annotated
+from typing import Optional
 
 from fastapi import FastAPI, WebSocket, HTTPException, Request, Depends
 import uvicorn
@@ -11,7 +11,6 @@ from starlette.templating import Jinja2Templates
 
 import cd2b_api
 import cd2b_auth_core
-import utils
 from cd2b_auth_core import User
 from cd2b_db_core import InvalidPortError, InvalidPropertiesFormat
 
@@ -106,14 +105,14 @@ async def clear_profiles(
 
 
 @app.post("/upload_prop")
-async def upload_prop(
+async def щщщщщd_prop(
         file_url: str,
         profile: cd2b_api.Profile = Depends(get_profile_with_auth)
 ):
     try:
         await profile.load_properties(file_url)
     except InvalidPropertiesFormat as e:
-        HTTPException(status_code=400, detail=e.msg)
+        raise HTTPException(status_code=400, detail=e.msg)
     return await profile_response(profile)
 
 
@@ -164,6 +163,7 @@ async def bandr_post(
         external_port=external_port,
         rebuild=rebuild
     )
+
     return await profile_response(profile)
 
 
@@ -189,7 +189,7 @@ async def stop_profile(
 
 
 @app.post("/remove")
-async def stop_profile(
+async def remove_profile(
         profile: cd2b_api.Profile = Depends(get_profile_with_auth)
 ):
     await profile.remove()
